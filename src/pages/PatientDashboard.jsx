@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Swal from 'sweetalert2';
-import { User, ClipboardList, ShieldAlert, HeartPulse, Edit } from 'lucide-react';
+import { User, ClipboardList, ShieldAlert, HeartPulse, Edit, Download } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import QRGenerator from '../components/QRGenerator';
 import Loader from '../components/Loader';
@@ -8,6 +8,8 @@ import { useAuth } from '../context/AuthContext';
 import { getMedicalRecords } from '../services/recordService';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const PatientDashboard = () => {
   const { currentUser } = useAuth();
@@ -16,8 +18,10 @@ const PatientDashboard = () => {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [generatingPDF, setGeneratingPDF] = useState(false);
   
   const [emergencyData, setEmergencyData] = useState({});
+  const pdfRef = useRef(null);
 
   useEffect(() => {
     const fetchPatientData = async () => {
@@ -31,7 +35,6 @@ const PatientDashboard = () => {
           setPatient(data);
           setEmergencyData(data.emergencyProfile || {});
           
-          // Fetch records
           const recordsData = await getMedicalRecords(currentUser.uid);
           setRecords(recordsData);
         }
@@ -59,6 +62,27 @@ const PatientDashboard = () => {
     }
   };
 
+  const generatePDF = async () => {
+    if (!pdfRef.current) return;
+    setGeneratingPDF(true);
+    
+    try {
+      const canvas = await html2canvas(pdfRef.current, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Ficha_Emergencia_${patient.dni}.pdf`);
+    } catch (error) {
+      console.error("Error generating PDF", error);
+      Swal.fire('Error', 'No se pudo generar el PDF', 'error');
+    } finally {
+      setGeneratingPDF(false);
+    }
+  };
+
   if (loading) return <Loader fullScreen />;
   
   if (!patient) return (
@@ -82,24 +106,30 @@ const PatientDashboard = () => {
           <div className="lg:col-span-2 flex flex-col gap-6">
             
             {/* Header / Info */}
-            <div className="card flex items-center gap-6">
-              <div className="bg-background p-4 rounded-full text-primary">
-                <User size={48} />
+            <div className="card flex justify-between items-center gap-6">
+              <div className="flex items-center gap-6">
+                <div className="bg-background p-4 rounded-full text-primary">
+                  <User size={48} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold">{patient.nombre}</h2>
+                  <p className="text-text-secondary text-lg">DNI: {patient.dni}</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-2xl font-bold">{patient.nombre}</h2>
-                <p className="text-text-secondary text-lg">DNI: {patient.dni}</p>
-              </div>
+              <button onClick={generatePDF} disabled={generatingPDF} className="btn btn-primary hidden md:flex">
+                <Download className="w-4 h-4" />
+                {generatingPDF ? 'Generando...' : 'Exportar Ficha PDF'}
+              </button>
             </div>
 
-            {/* Emergency Profile Editor */}
-            <div className="card">
-              <div className="flex justify-between items-center mb-6">
+            {/* Printable Area Reference */}
+            <div ref={pdfRef} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <div className="flex justify-between items-start mb-6 border-b border-border pb-4">
                 <h2 className="flex items-center gap-2 text-xl font-bold text-danger">
-                  <HeartPulse className="w-6 h-6" /> Perfil de Emergencia Público
+                  <HeartPulse className="w-6 h-6" /> Ficha de Emergencia Médica
                 </h2>
                 {!isEditing && (
-                  <button onClick={() => setIsEditing(true)} className="btn btn-outline text-sm py-1 px-3">
+                  <button onClick={() => setIsEditing(true)} className="btn btn-outline text-sm py-1 px-3" data-html2canvas-ignore>
                     <Edit className="w-4 h-4" /> Editar
                   </button>
                 )}
@@ -143,19 +173,57 @@ const PatientDashboard = () => {
                   </div>
                 </form>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div><span className="font-semibold text-text-secondary">Tipo de Sangre:</span> {patient.emergencyProfile?.bloodType || 'No especificado'}</div>
-                  <div><span className="font-semibold text-text-secondary">Alergias:</span> {patient.emergencyProfile?.allergies || 'Ninguna'}</div>
-                  <div className="sm:col-span-2"><span className="font-semibold text-text-secondary">Enfermedades:</span> {patient.emergencyProfile?.criticalDiseases || 'Ninguna'}</div>
-                  <div className="sm:col-span-2"><span className="font-semibold text-text-secondary">Contactos:</span> <br/>{patient.emergencyProfile?.emergencyContacts || 'No especificados'}</div>
-                  <div><span className="font-semibold text-text-secondary">Seguro:</span> {patient.emergencyProfile?.insurance || 'No especificado'}</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-4">
                   <div>
-                    <span className="font-semibold text-text-secondary">Donante:</span> {patient.emergencyProfile?.organDonor ? 'Sí' : 'No'} | 
-                    <span className="font-semibold text-text-secondary ml-2">Transfusiones:</span> {patient.emergencyProfile?.acceptsTransfusions ? 'Sí' : 'No'}
+                    <p className="text-red-800 font-bold mb-1 text-xs uppercase">Paciente</p>
+                    <p className="font-semibold text-slate-900">{patient.nombre} (DNI: {patient.dni})</p>
+                  </div>
+                  <div>
+                    <p className="text-red-800 font-bold mb-1 text-xs uppercase">Tipo de Sangre</p>
+                    <p className="text-2xl font-black text-slate-900">{patient.emergencyProfile?.bloodType || 'No especificado'}</p>
+                  </div>
+                  <div>
+                    <p className="text-red-800 font-bold mb-1 text-xs uppercase">Alergias</p>
+                    <p className="font-semibold text-slate-900">{patient.emergencyProfile?.allergies || 'Ninguna'}</p>
+                  </div>
+                  <div>
+                    <p className="text-red-800 font-bold mb-1 text-xs uppercase">Enfermedades Críticas</p>
+                    <p className="font-semibold text-slate-900">{patient.emergencyProfile?.criticalDiseases || 'Ninguna'}</p>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <p className="text-red-800 font-bold mb-1 text-xs uppercase">Contactos de Emergencia</p>
+                    <p className="font-semibold text-slate-900 whitespace-pre-line">{patient.emergencyProfile?.emergencyContacts || 'No especificados'}</p>
+                  </div>
+                  <div className="flex gap-4 sm:col-span-2 pt-4 border-t border-slate-100">
+                    <div>
+                      <span className="font-bold text-xs text-text-secondary uppercase block mb-1">Donante de Órganos</span>
+                      <span className={`px-2 py-1 text-xs font-bold rounded ${patient.emergencyProfile?.organDonor ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600'}`}>
+                        {patient.emergencyProfile?.organDonor ? 'SÍ' : 'NO'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-xs text-text-secondary uppercase block mb-1">Acepta Transfusiones</span>
+                      <span className={`px-2 py-1 text-xs font-bold rounded ${patient.emergencyProfile?.acceptsTransfusions ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {patient.emergencyProfile?.acceptsTransfusions ? 'SÍ' : 'NO'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* QR included only for PDF print logic, visually hidden via CSS or styled neatly */}
+                  <div className="sm:col-span-2 flex justify-center mt-6 border-t border-slate-100 pt-6">
+                    <div className="text-center">
+                      <p className="text-xs text-slate-500 uppercase font-bold mb-2">Escanea para verificar validez</p>
+                      <QRGenerator dni={patient.dni} />
+                    </div>
                   </div>
                 </div>
               )}
             </div>
+
+            <button onClick={generatePDF} disabled={generatingPDF} className="btn btn-primary md:hidden w-full">
+              <Download className="w-4 h-4" />
+              {generatingPDF ? 'Generando...' : 'Exportar Ficha PDF'}
+            </button>
 
             {/* Timeline of Records (Read Only) */}
             <div className="card">
@@ -176,6 +244,23 @@ const PatientDashboard = () => {
                           </span>
                         </div>
                         <p className="mb-4 whitespace-pre-line text-slate-700">{record.observaciones}</p>
+
+                        {/* Render Evidences */}
+                        {(record.recetaMedica || record.examenesSolicitados || record.remisiones) && (
+                          <div className="bg-white border border-slate-200 rounded p-4 mt-4 mb-4 grid grid-cols-1 gap-3">
+                            <h4 className="font-bold text-sm text-slate-500 uppercase tracking-wide">Evidencias Adjuntas</h4>
+                            {record.recetaMedica && (
+                              <div><strong className="text-slate-800 text-sm">Receta:</strong> <span className="text-slate-600 text-sm">{record.recetaMedica}</span></div>
+                            )}
+                            {record.examenesSolicitados && (
+                              <div><strong className="text-slate-800 text-sm">Exámenes:</strong> <span className="text-slate-600 text-sm">{record.examenesSolicitados}</span></div>
+                            )}
+                            {record.remisiones && (
+                              <div><strong className="text-slate-800 text-sm">Remisiones:</strong> <span className="text-slate-600 text-sm">{record.remisiones}</span></div>
+                            )}
+                          </div>
+                        )}
+
                         <div className="text-sm text-text-secondary border-t border-border pt-3">
                           <strong>Atendido por:</strong> {record.doctorName} (Col. {record.numeroColegiado})
                         </div>

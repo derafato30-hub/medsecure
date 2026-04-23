@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { User, ClipboardList, ShieldAlert, Plus, ExternalLink } from 'lucide-react';
+import { User, ClipboardList, ShieldAlert, Plus, ExternalLink, FileText, Activity, Link as LinkIcon } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import QRGenerator from '../components/QRGenerator';
 import Loader from '../components/Loader';
@@ -18,6 +18,9 @@ const PatientDetail = () => {
   
   const [diagnostico, setDiagnostico] = useState('');
   const [observaciones, setObservaciones] = useState('');
+  const [recetaMedica, setRecetaMedica] = useState('');
+  const [examenesSolicitados, setExamenesSolicitados] = useState('');
+  const [remisiones, setRemisiones] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -50,7 +53,7 @@ const PatientDetail = () => {
     
     const result = await Swal.fire({
       title: '¿Confirmar Historial?',
-      text: '⚠️ ATENCIÓN: Este registro médico será INMUTABLE. Una vez guardado, no podrá ser modificado ni eliminado.',
+      text: '⚠️ ATENCIÓN: Este registro médico y sus evidencias asociadas serán INMUTABLES. Asegúrese de que todos los datos son correctos.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#2563eb',
@@ -65,15 +68,22 @@ const PatientDetail = () => {
         const recordData = {
           doctorId: currentUser.uid,
           doctorName: currentUser.email,
-          numeroColegiado: 'COL-12345',
+          numeroColegiado: 'COL-12345', // En producción vendría del perfil del doc
           diagnostico,
-          observaciones
+          observaciones,
+          recetaMedica: recetaMedica.trim() || null,
+          examenesSolicitados: examenesSolicitados.trim() || null,
+          remisiones: remisiones.trim() || null
         };
         
         const newRecord = await addMedicalRecord(patient.id, recordData);
         setRecords([newRecord, ...records]);
+        
         setDiagnostico('');
         setObservaciones('');
+        setRecetaMedica('');
+        setExamenesSolicitados('');
+        setRemisiones('');
         
         Swal.fire('Guardado!', 'El registro ha sido añadido al historial.', 'success');
       } catch (error) {
@@ -131,12 +141,12 @@ const PatientDetail = () => {
               <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-md mb-6 flex items-start gap-3">
                 <ShieldAlert className="w-6 h-6 flex-shrink-0" />
                 <div className="text-sm">
-                  <strong>Aviso de Inmutabilidad:</strong> Los registros médicos guardados en este sistema no pueden ser editados ni eliminados. Asegúrese de que toda la información sea correcta antes de firmar.
+                  <strong>Aviso de Inmutabilidad:</strong> Los registros y evidencias guardadas no pueden ser editadas ni eliminadas. Revisa exhaustivamente antes de firmar.
                 </div>
               </div>
               <form onSubmit={handleAddRecord}>
                 <div className="form-group">
-                  <label className="form-label">Diagnóstico</label>
+                  <label className="form-label">Diagnóstico Principal</label>
                   <input
                     type="text"
                     className="form-control"
@@ -146,18 +156,57 @@ const PatientDetail = () => {
                     placeholder="Ej. Faringitis aguda"
                   />
                 </div>
+                
                 <div className="form-group">
-                  <label className="form-label">Observaciones</label>
+                  <label className="form-label">Observaciones Clínicas</label>
                   <textarea
                     className="form-control"
-                    rows="4"
+                    rows="3"
                     value={observaciones}
                     onChange={(e) => setObservaciones(e.target.value)}
                     required
-                    placeholder="Detalles del tratamiento, prescripciones, etc."
+                    placeholder="Signos vitales, exploración física, etc."
                   ></textarea>
                 </div>
-                <button type="submit" className="btn btn-primary" disabled={saving}>
+
+                <h3 className="font-bold text-lg mt-8 mb-4 border-b border-border pb-2">Evidencias Estructuradas (Opcional)</h3>
+
+                <div className="form-group">
+                  <label className="form-label flex items-center gap-2"><FileText className="w-4 h-4" /> Receta Médica</label>
+                  <textarea
+                    className="form-control bg-slate-50"
+                    rows="2"
+                    value={recetaMedica}
+                    onChange={(e) => setRecetaMedica(e.target.value)}
+                    placeholder="Medicamentos, dosis, frecuencia o URL del PDF de la receta"
+                  ></textarea>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="form-group">
+                    <label className="form-label flex items-center gap-2"><Activity className="w-4 h-4" /> Exámenes Solicitados</label>
+                    <textarea
+                      className="form-control bg-slate-50"
+                      rows="2"
+                      value={examenesSolicitados}
+                      onChange={(e) => setExamenesSolicitados(e.target.value)}
+                      placeholder="Hemograma, Rx Torax, etc."
+                    ></textarea>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label className="form-label flex items-center gap-2"><LinkIcon className="w-4 h-4" /> Remisiones / Interconsultas</label>
+                    <textarea
+                      className="form-control bg-slate-50"
+                      rows="2"
+                      value={remisiones}
+                      onChange={(e) => setRemisiones(e.target.value)}
+                      placeholder="Derivación a cardiología..."
+                    ></textarea>
+                  </div>
+                </div>
+
+                <button type="submit" className="btn btn-primary w-full mt-4" disabled={saving}>
                   {saving ? 'Guardando...' : 'Firmar y Guardar Registro'}
                 </button>
               </form>
@@ -182,6 +231,23 @@ const PatientDetail = () => {
                           </span>
                         </div>
                         <p className="mb-4 whitespace-pre-line text-slate-700">{record.observaciones}</p>
+                        
+                        {/* Render Evidences */}
+                        {(record.recetaMedica || record.examenesSolicitados || record.remisiones) && (
+                          <div className="bg-white border border-slate-200 rounded p-4 mt-4 mb-4 grid grid-cols-1 gap-3">
+                            <h4 className="font-bold text-sm text-slate-500 uppercase tracking-wide">Evidencias Adjuntas</h4>
+                            {record.recetaMedica && (
+                              <div><strong className="text-slate-800 text-sm">Receta:</strong> <span className="text-slate-600 text-sm">{record.recetaMedica}</span></div>
+                            )}
+                            {record.examenesSolicitados && (
+                              <div><strong className="text-slate-800 text-sm">Exámenes:</strong> <span className="text-slate-600 text-sm">{record.examenesSolicitados}</span></div>
+                            )}
+                            {record.remisiones && (
+                              <div><strong className="text-slate-800 text-sm">Remisiones:</strong> <span className="text-slate-600 text-sm">{record.remisiones}</span></div>
+                            )}
+                          </div>
+                        )}
+
                         <div className="text-sm text-text-secondary border-t border-border pt-3">
                           <strong>Firmado por:</strong> {record.doctorName} (Col. {record.numeroColegiado})
                         </div>

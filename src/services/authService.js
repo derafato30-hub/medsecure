@@ -1,4 +1,4 @@
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from './firebase';
 
@@ -72,5 +72,35 @@ export const registerPatientAsDoctor = async (patientData) => {
     }
   });
   
+  return uid;
+};
+
+export const registerPublicPatient = async (patientData) => {
+  const userCredential = await createUserWithEmailAndPassword(auth, patientData.email, patientData.password);
+  const uid = userCredential.user.uid;
+
+  // Set user role
+  await setDoc(doc(db, 'users', uid), {
+    role: 'patient',
+    email: patientData.email
+  });
+  
+  // Create patient document
+  await setDoc(doc(db, 'patients', uid), {
+    dni: patientData.dni,
+    nombre: patientData.nombre,
+    fechaNacimiento: patientData.fechaNacimiento,
+    createdAt: serverTimestamp(),
+    emergencyProfile: {
+      bloodType: '',
+      allergies: '',
+      criticalDiseases: '',
+      emergencyContacts: '',
+      insurance: '',
+      acceptsTransfusions: false,
+      organDonor: false,
+    }
+  });
+
   return uid;
 };

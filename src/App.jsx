@@ -4,19 +4,33 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 
 import Login from './pages/Login';
+import SignUp from './pages/SignUp';
 import Dashboard from './pages/Dashboard';
 import PatientDetail from './pages/PatientDetail';
 import EmergencyView from './pages/EmergencyView';
 import PatientDashboard from './pages/PatientDashboard';
+import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
+          {/* Public Routes */}
           <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
           <Route path="/emergency/:dni" element={<EmergencyView />} />
           
+          {/* Protected Routes for Admin */}
+          <Route 
+            path="/admin" 
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminDashboard />
+              </ProtectedRoute>
+            } 
+          />
+
           {/* Protected Routes for Doctors */}
           <Route 
             path="/" 

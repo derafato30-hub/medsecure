@@ -20,6 +20,8 @@ const Login = () => {
         navigate('/');
       } else if (role === 'patient') {
         navigate('/my-profile');
+      } else if (role === 'admin') {
+        navigate('/admin');
       } else {
         navigate('/');
       }
