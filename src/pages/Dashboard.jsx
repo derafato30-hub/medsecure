@@ -4,13 +4,35 @@ import { Search, UserPlus } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { getPatientByDni } from '../services/patientService';
 import PatientRegistration from '../components/PatientRegistration';
+import { useAuth } from '../context/AuthContext';
+import { db } from '../services/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 const Dashboard = () => {
   const [dni, setDni] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showRegistration, setShowRegistration] = useState(false);
+  const [doctorName, setDoctorName] = useState('');
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchDoctorName = async () => {
+      if (currentUser) {
+        try {
+          const docRef = doc(db, 'doctors_directory', currentUser.uid);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            setDoctorName(docSnap.data().nombre);
+          }
+        } catch (error) {
+          console.error("Error fetching doctor name:", error);
+        }
+      }
+    };
+    fetchDoctorName();
+  }, [currentUser]);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -39,7 +61,10 @@ const Dashboard = () => {
       <Navbar />
       <div className="container animate-fade-in py-12">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Panel Médico</h1>
+          <div>
+            <h1 className="text-3xl font-bold">Panel Médico</h1>
+            {doctorName && <p className="text-primary font-medium">Bienvenido, Dr. {doctorName}</p>}
+          </div>
           <button 
             onClick={() => setShowRegistration(!showRegistration)} 
             className={`btn ${showRegistration ? 'btn-outline' : 'btn-primary'}`}

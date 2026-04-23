@@ -22,6 +22,7 @@ const PatientDetail = () => {
   const [examenesSolicitados, setExamenesSolicitados] = useState('');
   const [remisiones, setRemisiones] = useState('');
   const [saving, setSaving] = useState(false);
+  const [doctorInfo, setDoctorInfo] = useState({ nombre: '', colegiatura: '' });
 
   useEffect(() => {
     const fetchPatientData = async () => {
@@ -45,8 +46,27 @@ const PatientDetail = () => {
       }
     };
     
+    const fetchDoctorData = async () => {
+      if (!currentUser) return;
+      try {
+        const { doc, getDoc } = await import('firebase/firestore');
+        const { db } = await import('../services/firebase');
+        const docRef = doc(db, 'doctors_directory', currentUser.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setDoctorInfo({
+            nombre: docSnap.data().nombre,
+            colegiatura: docSnap.data().colegiatura
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching doctor info", error);
+      }
+    };
+    
     fetchPatientData();
-  }, [id]);
+    fetchDoctorData();
+  }, [id, currentUser]);
 
   const handleAddRecord = async (e) => {
     e.preventDefault();
@@ -67,8 +87,8 @@ const PatientDetail = () => {
       try {
         const recordData = {
           doctorId: currentUser.uid,
-          doctorName: currentUser.email,
-          numeroColegiado: 'COL-12345', // En producción vendría del perfil del doc
+          doctorName: doctorInfo.nombre || currentUser.email,
+          numeroColegiado: doctorInfo.colegiatura || 'N/A',
           diagnostico,
           observaciones,
           recetaMedica: recetaMedica.trim() || null,
