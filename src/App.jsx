@@ -11,7 +11,7 @@ import EmergencyView from './pages/EmergencyView';
 import PatientDashboard from './pages/PatientDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import AccountSettings from './pages/AccountSettings';
-
+console.log("¿La API Key existe?", !!import.meta.env.VITE_FIREBASE_API_KEY);
 function App() {
   return (
     <AuthProvider>
@@ -21,53 +21,53 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/emergency/:dni" element={<EmergencyView />} />
-          
+
           {/* Protected Routes for Admin */}
-          <Route 
-            path="/admin" 
+          <Route
+            path="/admin"
             element={
               <ProtectedRoute requiredRole="admin">
                 <AdminDashboard />
               </ProtectedRoute>
-            } 
+            }
           />
 
           {/* Protected Routes for Doctors */}
-          <Route 
-            path="/" 
+          <Route
+            path="/"
             element={
               <ProtectedRoute requiredRole="doctor">
                 <Dashboard />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/patient/:id" 
+          <Route
+            path="/patient/:id"
             element={
               <ProtectedRoute requiredRole="doctor">
                 <PatientDetail />
               </ProtectedRoute>
-            } 
+            }
           />
 
           {/* Protected Routes for Patients */}
-          <Route 
-            path="/my-profile" 
+          <Route
+            path="/my-profile"
             element={
               <ProtectedRoute requiredRole="patient">
                 <PatientDashboard />
               </ProtectedRoute>
-            } 
+            }
           />
 
           {/* Settings Route for All Authenticated Users */}
-          <Route 
-            path="/settings" 
+          <Route
+            path="/settings"
             element={
               <ProtectedRoute>
                 <AccountSettings />
               </ProtectedRoute>
-            } 
+            }
           />
         </Routes>
       </Router>
