@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Users, UserCheck, Stethoscope } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { db } from '../services/firebase';
-import { collection, addDoc, getDocs, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
+import { registerDoctor } from '../services/authService';
 import Swal from 'sweetalert2';
 import Loader from '../components/Loader';
 
@@ -14,7 +15,9 @@ const AdminDashboard = () => {
     colegiatura: '',
     especialidad: '',
     universidad: '',
-    centroTrabajo: ''
+    centroTrabajo: '',
+    email: '',
+    password: ''
   });
   const [saving, setSaving] = useState(false);
 
@@ -40,16 +43,22 @@ const AdminDashboard = () => {
     e.preventDefault();
     setSaving(true);
     try {
-      await addDoc(collection(db, 'doctors_directory'), {
-        ...formData,
-        estadoLicencia: 'Activa',
-        createdAt: serverTimestamp()
+      // Usar el servicio de registro silencioso (REST API)
+      await registerDoctor(formData);
+      
+      Swal.fire('Éxito', 'Doctor registrado exitosamente con credenciales de acceso', 'success');
+      setFormData({ 
+        nombre: '', 
+        colegiatura: '', 
+        especialidad: '', 
+        universidad: '', 
+        centroTrabajo: '',
+        email: '',
+        password: '' 
       });
-      Swal.fire('Guardado', 'Doctor registrado en el directorio', 'success');
-      setFormData({ nombre: '', colegiatura: '', especialidad: '', universidad: '', centroTrabajo: '' });
       fetchDoctors();
     } catch (error) {
-      Swal.fire('Error', 'No se pudo registrar al doctor', 'error');
+      Swal.fire('Error', error.message || 'No se pudo registrar al doctor', 'error');
       console.error(error);
     } finally {
       setSaving(false);
@@ -90,6 +99,20 @@ const AdminDashboard = () => {
               <div>
                 <label className="form-label">Centro de Trabajo Actual</label>
                 <input required type="text" name="centroTrabajo" value={formData.centroTrabajo} onChange={handleChange} className="form-control" />
+              </div>
+
+              <div className="border-t pt-4 mt-2">
+                <h3 className="text-sm font-bold text-primary mb-3 uppercase tracking-wider">Credenciales de Acceso</h3>
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <label className="form-label text-xs">Email Institucional</label>
+                    <input required type="email" name="email" value={formData.email} onChange={handleChange} className="form-control" placeholder="ejemplo@medsecure.com" />
+                  </div>
+                  <div>
+                    <label className="form-label text-xs">Contraseña Temporal</label>
+                    <input required type="password" name="password" value={formData.password} onChange={handleChange} className="form-control" placeholder="Min. 6 caracteres" />
+                  </div>
+                </div>
               </div>
               <button type="submit" disabled={saving} className="btn btn-primary mt-2">
                 {saving ? 'Registrando...' : 'Registrar en Directorio'}

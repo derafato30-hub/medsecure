@@ -117,3 +117,46 @@ export const changeUserPassword = async (currentPassword, newPassword) => {
   // Actualizar contraseña
   await updatePassword(user, newPassword);
 };
+
+export const registerDoctor = async (doctorData) => {
+  const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+  
+  // Create user via REST API so it doesn't log out the admin
+  const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: doctorData.email,
+      password: doctorData.password,
+      returnSecureToken: false
+    })
+  });
+  
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error?.message || 'Error registering doctor auth');
+  }
+  
+  const uid = data.localId;
+  
+  // 1. Create entry in /users/{uid}
+  await setDoc(doc(db, 'users', uid), {
+    role: 'doctor',
+    email: doctorData.email,
+    createdAt: serverTimestamp()
+  });
+  
+  // 2. Create entry in /doctors_directory/{uid}
+  await setDoc(doc(db, 'doctors_directory', uid), {
+    nombre: doctorData.nombre,
+    colegiatura: doctorData.colegiatura,
+    especialidad: doctorData.especialidad,
+    universidad: doctorData.universidad,
+    centroTrabajo: doctorData.centroTrabajo,
+    estadoLicencia: 'Activa',
+    email: doctorData.email,
+    createdAt: serverTimestamp()
+  });
+  
+  return uid;
+};

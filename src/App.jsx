@@ -11,7 +11,7 @@ import EmergencyView from './pages/EmergencyView';
 import PatientDashboard from './pages/PatientDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import AccountSettings from './pages/AccountSettings';
-console.log("¿La API Key existe?", !!import.meta.env.VITE_FIREBASE_API_KEY);
+
 function App() {
   return (
     <AuthProvider>
