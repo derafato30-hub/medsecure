@@ -18,32 +18,21 @@ const Navbar = () => {
   };
 
   return (
-    <nav style={{
-      backgroundColor: 'var(--surface)',
-      borderBottom: '1px solid var(--border)',
-      padding: '1rem 0',
-      position: 'sticky',
-      top: 0,
-      zIndex: 100
-    }}>
-      <div className="container" style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 'bold', fontSize: '1.25rem', color: 'var(--primary)' }}>
-          <Shield size={24} />
+    <nav className="bg-surface border-b border-border py-4 sticky top-0 z-[100]">
+      <div className="container flex justify-between items-center">
+        <Link to="/" className="flex items-center gap-2 font-bold text-xl text-primary">
+          <Shield className="w-6 h-6" />
           MedSecure
         </Link>
         
         {currentUser && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <User size={16} />
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-text-secondary flex items-center gap-2">
+              <User className="w-4 h-4" />
               {userRole === 'doctor' ? 'Dr. ' : ''}{currentUser.email}
             </span>
-            <button className="btn btn-outline" onClick={handleLogout} style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>
-              <LogOut size={16} />
+            <button className="btn btn-outline py-2 px-4 text-sm" onClick={handleLogout}>
+              <LogOut className="w-4 h-4" />
               Salir
             </button>
           </div>

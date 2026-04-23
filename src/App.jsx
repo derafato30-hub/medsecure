@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import PatientDetail from './pages/PatientDetail';
 import EmergencyView from './pages/EmergencyView';
+import PatientDashboard from './pages/PatientDashboard';
 
 function App() {
   return (
@@ -16,7 +17,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/emergency/:dni" element={<EmergencyView />} />
           
-          {/* Protected Routes */}
+          {/* Protected Routes for Doctors */}
           <Route 
             path="/" 
             element={
@@ -30,6 +31,16 @@ function App() {
             element={
               <ProtectedRoute requiredRole="doctor">
                 <PatientDetail />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Protected Routes for Patients */}
+          <Route 
+            path="/my-profile" 
+            element={
+              <ProtectedRoute requiredRole="patient">
+                <PatientDashboard />
               </ProtectedRoute>
             } 
           />

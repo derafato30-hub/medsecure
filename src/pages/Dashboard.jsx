@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, UserPlus, FileText } from 'lucide-react';
+import { Search, UserPlus } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { getPatientByDni } from '../services/patientService';
+import PatientRegistration from '../components/PatientRegistration';
 
 const Dashboard = () => {
   const [dni, setDni] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showRegistration, setShowRegistration] = useState(false);
   const navigate = useNavigate();
 
   const handleSearch = async (e) => {
@@ -35,15 +37,28 @@ const Dashboard = () => {
   return (
     <div>
       <Navbar />
-      <div className="container animate-fade-in" style={{ paddingTop: '3rem' }}>
-        <h1 style={{ marginBottom: '2rem' }}>Panel Médico</h1>
+      <div className="container animate-fade-in py-12">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Panel Médico</h1>
+          <button 
+            onClick={() => setShowRegistration(!showRegistration)} 
+            className={`btn ${showRegistration ? 'btn-outline' : 'btn-primary'}`}
+          >
+            {showRegistration ? 'Ocultar Registro' : 'Registrar Nuevo Paciente'}
+          </button>
+        </div>
         
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+        {showRegistration && (
+          <div className="mb-8 animate-fade-in">
+            <PatientRegistration onRegistered={() => setShowRegistration(false)} />
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           
           <div className="card">
-            <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
-              <Search color="var(--primary)" />
-              Buscar Paciente
+            <h2 className="flex items-center gap-2 text-xl font-bold mb-6 text-primary">
+              <Search className="w-6 h-6" /> Buscar Paciente
             </h2>
             <form onSubmit={handleSearch}>
               <div className="form-group">
@@ -56,22 +71,19 @@ const Dashboard = () => {
                   onChange={(e) => setDni(e.target.value)}
                 />
               </div>
-              {error && <p style={{ color: 'var(--danger)', fontSize: '0.875rem', marginBottom: '1rem' }}>{error}</p>}
-              <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%' }}>
+              {error && <p className="text-danger text-sm mb-4">{error}</p>}
+              <button type="submit" className="btn btn-primary w-full" disabled={loading}>
                 {loading ? 'Buscando...' : 'Buscar Historial'}
               </button>
             </form>
           </div>
 
-          <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', padding: '3rem 1.5rem' }}>
-            <UserPlus size={48} color="var(--text-secondary)" style={{ marginBottom: '1rem' }} />
-            <h3 style={{ marginBottom: '0.5rem' }}>Nuevo Paciente</h3>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-              Registra un nuevo paciente en el sistema para comenzar su historial.
+          <div className="card flex flex-col justify-center items-center text-center p-8">
+            <UserPlus className="w-16 h-16 text-slate-300 mb-4" />
+            <h3 className="text-xl font-bold mb-2">Acceso Rápido</h3>
+            <p className="text-text-secondary mb-6">
+              Busca a un paciente existente con su DNI para añadir registros inmutables, o registra a un paciente nuevo en el sistema para habilitar su acceso.
             </p>
-            <button className="btn btn-outline" onClick={() => alert('Función de registro en desarrollo')} style={{ width: '100%' }}>
-              Registrar Paciente
-            </button>
           </div>
           
         </div>

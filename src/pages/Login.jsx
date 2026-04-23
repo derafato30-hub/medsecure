@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield } from 'lucide-react';
-import { loginDoctor } from '../services/authService';
+import { loginUser } from '../services/authService';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -15,8 +15,14 @@ const Login = () => {
     setError('');
     setLoading(true);
     try {
-      await loginDoctor(email, password);
-      navigate('/'); // Redirects to Dashboard
+      const { role } = await loginUser(email, password);
+      if (role === 'doctor') {
+        navigate('/');
+      } else if (role === 'patient') {
+        navigate('/my-profile');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setError(err.message || 'Error al iniciar sesión. Verifica tus credenciales.');
     } finally {
@@ -25,37 +31,23 @@ const Login = () => {
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: '100vh',
-      backgroundColor: 'var(--background)',
-      padding: '1.5rem'
-    }}>
-      <div className="card animate-fade-in" style={{ maxWidth: '400px', width: '100%', textAlign: 'center' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem', color: 'var(--primary)' }}>
-          <Shield size={48} />
+    <div className="flex justify-center items-center min-h-screen bg-background p-6">
+      <div className="card max-w-md w-full text-center animate-fade-in">
+        <div className="flex justify-center mb-6 text-primary">
+          <Shield className="w-12 h-12" />
         </div>
-        <h2 style={{ marginBottom: '0.5rem' }}>Acceso Doctores</h2>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
-          Ingresa a MedSecure para gestionar historiales
+        <h2 className="text-2xl font-bold mb-2">Acceso a MedSecure</h2>
+        <p className="text-slate-500 mb-8">
+          Ingresa tus credenciales para acceder a la plataforma
         </p>
 
         {error && (
-          <div style={{
-            backgroundColor: '#fee2e2',
-            color: '#b91c1c',
-            padding: '0.75rem',
-            borderRadius: 'var(--radius-md)',
-            marginBottom: '1.5rem',
-            fontSize: '0.875rem'
-          }}>
+          <div className="bg-red-50 text-red-700 p-3 rounded-md mb-6 text-sm text-left">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleLogin} style={{ textAlign: 'left' }}>
+        <form onSubmit={handleLogin} className="text-left">
           <div className="form-group">
             <label className="form-label">Correo Electrónico</label>
             <input
@@ -64,7 +56,7 @@ const Login = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="dr@hospital.com"
+              placeholder="usuario@hospital.com"
             />
           </div>
           <div className="form-group">
@@ -80,8 +72,7 @@ const Login = () => {
           </div>
           <button
             type="submit"
-            className="btn btn-primary"
-            style={{ width: '100%', marginTop: '1rem' }}
+            className="btn btn-primary w-full mt-4"
             disabled={loading}
           >
             {loading ? 'Iniciando...' : 'Iniciar Sesión'}

@@ -1,20 +1,20 @@
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from './firebase';
 
-export const loginDoctor = async (email, password) => {
+export const loginUser = async (email, password) => {
   const userCredential = await signInWithEmailAndPassword(auth, email, password);
   const user = userCredential.user;
   
-  // Verify if the user is a doctor in Firestore
+  // Verify user role
   const userDocRef = doc(db, 'users', user.uid);
   const userDoc = await getDoc(userDocRef);
   
-  if (userDoc.exists() && userDoc.data().role === 'doctor') {
-    return { user, role: 'doctor', data: userDoc.data() };
+  if (userDoc.exists()) {
+    return { user, role: userDoc.data().role, data: userDoc.data() };
   } else {
     await signOut(auth);
-    throw new Error('Access denied: You do not have doctor privileges.');
+    throw new Error('Access denied: Role not found.');
   }
 };
 
@@ -26,4 +26,51 @@ export const setupDoctorAccount = async (uid, data) => {
     role: 'doctor',
     ...data
   });
+};
+
+export const registerPatientAsDoctor = async (patientData) => {
+  const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+  
+  // Create user via REST API so it doesn't log out the doctor
+  const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: patientData.email,
+      password: patientData.password,
+      returnSecureToken: false
+    })
+  });
+  
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error?.message || 'Error registering patient auth');
+  }
+  
+  const uid = data.localId;
+  
+  // Set user role
+  await setDoc(doc(db, 'users', uid), {
+    role: 'patient',
+    email: patientData.email
+  });
+  
+  // Create patient document with UID matching the Auth UID
+  await setDoc(doc(db, 'patients', uid), {
+    dni: patientData.dni,
+    nombre: patientData.nombre,
+    fechaNacimiento: patientData.fechaNacimiento,
+    createdAt: serverTimestamp(),
+    emergencyProfile: {
+      bloodType: '',
+      allergies: '',
+      criticalDiseases: '',
+      emergencyContacts: '',
+      insurance: '',
+      acceptsTransfusions: false,
+      organDonor: false,
+    }
+  });
+  
+  return uid;
 };

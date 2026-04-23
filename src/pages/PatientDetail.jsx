@@ -6,11 +6,10 @@ import Navbar from '../components/Navbar';
 import QRGenerator from '../components/QRGenerator';
 import Loader from '../components/Loader';
 import { useAuth } from '../context/AuthContext';
-import { getPatientByDni } from '../services/patientService';
 import { getMedicalRecords, addMedicalRecord } from '../services/recordService';
 
 const PatientDetail = () => {
-  const { id } = useParams(); // Using the ID parameter, but wait, the route from Dashboard navigate(`/patient/${patient.id}`)
+  const { id } = useParams();
   const { currentUser } = useAuth();
   
   const [patient, setPatient] = useState(null);
@@ -24,8 +23,6 @@ const PatientDetail = () => {
   useEffect(() => {
     const fetchPatientData = async () => {
       try {
-        // Since we routed to /patient/:id we would need getDoc, but let's assume getPatientByDni was modified or we have a getPatientById.
-        // Actually, let's just create getPatientById locally or modify our approach. Let's fetch using DNI if ID is DNI, or we need to add getDoc logic.
         const { doc, getDoc } = await import('firebase/firestore');
         const { db } = await import('../services/firebase');
         
@@ -35,7 +32,6 @@ const PatientDetail = () => {
         if (docSnap.exists()) {
           setPatient({ id: docSnap.id, ...docSnap.data() });
           
-          // Fetch records
           const recordsData = await getMedicalRecords(docSnap.id);
           setRecords(recordsData);
         }
@@ -52,14 +48,13 @@ const PatientDetail = () => {
   const handleAddRecord = async (e) => {
     e.preventDefault();
     
-    // Warning Message before saving
     const result = await Swal.fire({
       title: '¿Confirmar Historial?',
-      text: '⚠️ ATENCIÓN: Este registro médico será INMUTABLE. Una vez guardado, no podrá ser modificado ni eliminado por razones legales y de seguridad.',
+      text: '⚠️ ATENCIÓN: Este registro médico será INMUTABLE. Una vez guardado, no podrá ser modificado ni eliminado.',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: 'var(--primary)',
-      cancelButtonColor: 'var(--danger)',
+      confirmButtonColor: '#2563eb',
+      cancelButtonColor: '#ef4444',
       confirmButtonText: 'Sí, Firmar y Guardar',
       cancelButtonText: 'Cancelar'
     });
@@ -69,15 +64,13 @@ const PatientDetail = () => {
       try {
         const recordData = {
           doctorId: currentUser.uid,
-          doctorName: currentUser.email, // In a real app we'd fetch their real name
-          numeroColegiado: 'COL-12345', // Mocked, ideally from user data
+          doctorName: currentUser.email,
+          numeroColegiado: 'COL-12345',
           diagnostico,
           observaciones
         };
         
         const newRecord = await addMedicalRecord(patient.id, recordData);
-        
-        // Optimistically add to list
         setRecords([newRecord, ...records]);
         setDiagnostico('');
         setObservaciones('');
@@ -97,9 +90,9 @@ const PatientDetail = () => {
   if (!patient) return (
     <div>
       <Navbar />
-      <div className="container" style={{ paddingTop: '2rem', textAlign: 'center' }}>
-        <h2>Paciente no encontrado</h2>
-        <Link to="/" className="btn btn-primary" style={{ marginTop: '1rem' }}>Volver al Panel</Link>
+      <div className="container pt-12 text-center">
+        <h2 className="text-2xl font-bold mb-4">Paciente no encontrado</h2>
+        <Link to="/" className="btn btn-primary">Volver al Panel</Link>
       </div>
     </div>
   );
@@ -107,23 +100,23 @@ const PatientDetail = () => {
   return (
     <div>
       <Navbar />
-      <div className="container animate-fade-in" style={{ paddingTop: '2rem', paddingBottom: '3rem' }}>
+      <div className="container animate-fade-in py-12">
         
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '2rem', alignItems: 'start' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
           
           {/* Main Content */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          <div className="lg:col-span-3 flex flex-col gap-8">
             
             {/* Header / Info */}
-            <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-              <div style={{ backgroundColor: 'var(--background)', padding: '1.5rem', borderRadius: '50%', color: 'var(--primary)' }}>
+            <div className="card flex items-center gap-6">
+              <div className="bg-background p-4 rounded-full text-primary">
                 <User size={48} />
               </div>
               <div>
-                <h1 style={{ marginBottom: '0.25rem' }}>{patient.nombre}</h1>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '1.125rem' }}>DNI: {patient.dni}</p>
-                <div style={{ marginTop: '0.5rem' }}>
-                  <Link to={`/emergency/${patient.dni}`} target="_blank" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: 'var(--danger)', fontWeight: '500', fontSize: '0.875rem' }}>
+                <h1 className="text-3xl font-bold mb-1">{patient.nombre}</h1>
+                <p className="text-text-secondary text-lg">DNI: {patient.dni}</p>
+                <div className="mt-2">
+                  <Link to={`/emergency/${patient.dni}`} target="_blank" className="inline-flex items-center gap-1 text-danger font-medium text-sm hover:underline">
                     <ExternalLink size={16} /> Ver Perfil de Emergencia
                   </Link>
                 </div>
@@ -132,12 +125,12 @@ const PatientDetail = () => {
 
             {/* Add Record Form */}
             <div className="card">
-              <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', color: 'var(--primary)' }}>
+              <h2 className="flex items-center gap-2 text-xl font-bold mb-6 text-primary">
                 <Plus /> Nuevo Registro Médico
               </h2>
-              <div className="warning-banner">
-                <ShieldAlert size={24} style={{ flexShrink: 0 }} />
-                <div>
+              <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-md mb-6 flex items-start gap-3">
+                <ShieldAlert className="w-6 h-6 flex-shrink-0" />
+                <div className="text-sm">
                   <strong>Aviso de Inmutabilidad:</strong> Los registros médicos guardados en este sistema no pueden ser editados ni eliminados. Asegúrese de que toda la información sea correcta antes de firmar.
                 </div>
               </div>
@@ -172,24 +165,24 @@ const PatientDetail = () => {
 
             {/* Timeline of Records */}
             <div className="card">
-              <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '2rem' }}>
-                <ClipboardList /> Historial Médico
+              <h2 className="flex items-center gap-2 text-xl font-bold mb-6">
+                <ClipboardList className="text-primary" /> Historial Médico
               </h2>
               {records.length === 0 ? (
-                <p style={{ color: 'var(--text-secondary)' }}>No hay registros médicos anteriores.</p>
+                <p className="text-text-secondary">No hay registros médicos anteriores.</p>
               ) : (
                 <div className="timeline">
                   {records.map(record => (
                     <div key={record.id} className="timeline-item">
-                      <div style={{ backgroundColor: 'var(--background)', padding: '1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                          <h3 style={{ fontSize: '1.125rem' }}>{record.diagnostico}</h3>
-                          <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                      <div className="bg-background p-5 rounded-md border border-border">
+                        <div className="flex justify-between mb-3">
+                          <h3 className="text-lg font-bold">{record.diagnostico}</h3>
+                          <span className="text-sm text-text-secondary">
                             {record.fecha ? new Date(record.fecha.toDate ? record.fecha.toDate() : Date.now()).toLocaleDateString() : 'Reciente'}
                           </span>
                         </div>
-                        <p style={{ marginBottom: '1rem', whiteSpace: 'pre-line' }}>{record.observaciones}</p>
-                        <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', borderTop: '1px solid var(--border)', paddingTop: '0.75rem' }}>
+                        <p className="mb-4 whitespace-pre-line text-slate-700">{record.observaciones}</p>
+                        <div className="text-sm text-text-secondary border-t border-border pt-3">
                           <strong>Firmado por:</strong> {record.doctorName} (Col. {record.numeroColegiado})
                         </div>
                       </div>
@@ -202,7 +195,7 @@ const PatientDetail = () => {
           </div>
 
           {/* Sidebar */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div className="lg:col-span-1 flex flex-col gap-6">
             <QRGenerator dni={patient.dni} />
           </div>
 
