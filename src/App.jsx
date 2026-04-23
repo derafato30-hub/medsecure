@@ -10,6 +10,7 @@ import PatientDetail from './pages/PatientDetail';
 import EmergencyView from './pages/EmergencyView';
 import PatientDashboard from './pages/PatientDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import AccountSettings from './pages/AccountSettings';
 
 function App() {
   return (
@@ -55,6 +56,16 @@ function App() {
             element={
               <ProtectedRoute requiredRole="patient">
                 <PatientDashboard />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Settings Route for All Authenticated Users */}
+          <Route 
+            path="/settings" 
+            element={
+              <ProtectedRoute>
+                <AccountSettings />
               </ProtectedRoute>
             } 
           />

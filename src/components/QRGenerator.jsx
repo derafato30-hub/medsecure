@@ -2,7 +2,8 @@ import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 
 const QRGenerator = ({ dni }) => {
-  const url = `${window.location.origin}/emergency/${dni}`;
+  const baseUrl = import.meta.env.VITE_PUBLIC_URL || window.location.origin;
+  const url = `${baseUrl}/emergency/${dni}`;
 
   return (
     <div className="flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-border w-full">

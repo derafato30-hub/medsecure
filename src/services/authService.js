@@ -1,4 +1,4 @@
-import { signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from './firebase';
 
@@ -103,4 +103,17 @@ export const registerPublicPatient = async (patientData) => {
   });
 
   return uid;
+};
+
+export const changeUserPassword = async (currentPassword, newPassword) => {
+  const user = auth.currentUser;
+  if (!user) throw new Error("No hay usuario autenticado.");
+
+  const credential = EmailAuthProvider.credential(user.email, currentPassword);
+  
+  // Re-autenticar al usuario
+  await reauthenticateWithCredential(user, credential);
+  
+  // Actualizar contraseña
+  await updatePassword(user, newPassword);
 };

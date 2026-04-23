@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Shield, LogOut, User } from 'lucide-react';
+import { Shield, LogOut, User, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { logout } from '../services/authService';
 
@@ -31,6 +31,9 @@ const Navbar = () => {
               <User className="w-4 h-4" />
               {userRole === 'doctor' ? 'Dr. ' : ''}{currentUser.email}
             </span>
+            <Link to="/settings" className="btn btn-outline border-transparent text-text-secondary hover:text-primary py-2 px-3" title="Configuración">
+              <Settings className="w-4 h-4" />
+            </Link>
             <button className="btn btn-outline py-2 px-4 text-sm" onClick={handleLogout}>
               <LogOut className="w-4 h-4" />
               Salir

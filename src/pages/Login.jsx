@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Shield } from 'lucide-react';
 import { loginUser } from '../services/authService';
 
@@ -80,6 +80,13 @@ const Login = () => {
             {loading ? 'Iniciando...' : 'Iniciar Sesión'}
           </button>
         </form>
+
+        <div className="mt-6 border-t border-slate-100 pt-6">
+          <p className="text-sm text-slate-500 mb-2">¿Eres paciente nuevo?</p>
+          <Link to="/signup" className="text-primary hover:text-primary-hover font-semibold hover:underline">
+            Crea tu cuenta aquí
+          </Link>
+        </div>
       </div>
     </div>
   );
